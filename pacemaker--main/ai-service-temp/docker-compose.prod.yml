@@ -1,0 +1,91 @@
+# docker-compose.prod.yml — Production configuration (Day 17)
+# Usage: docker compose -f docker-compose.prod.yml up -d --build
+# Differences from dev:
+#   - No volume mount of ./app (code baked into image)
+#   - Named ChromaDB volume for data persistence
+#   - Resource limits on services
+#   - Restart policy: always
+#   - No debug / reload flags
+
+version: "3.9"
+
+services:
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime          # Use the lean runtime stage
+    image: groq-ai-service:prod
+    container_name: groq-ai-service-prod
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - APP_ENV=production
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      # Persist ChromaDB data across container restarts/updates
+      - chroma_data:/app/chroma_data
+      # Optional: persist logs
+      - ai_logs:/app/logs
+    restart: always
+    networks:
+      - ai-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: groq-redis-prod
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - ai-network
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: "0.5"
+
+volumes:
+  chroma_data:
+    name: groq_chroma_data
+  redis_data:
+    name: groq_redis_data
+  ai_logs:
+    name: groq_ai_logs
+
+networks:
+  ai-network:
+    driver: bridge
+    name: groq-ai-network

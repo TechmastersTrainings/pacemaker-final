@@ -1,0 +1,134 @@
+version: '3.9'
+
+services:
+
+  # MYSQL DATABASE
+
+  mysql:
+
+    image: mysql:8.0
+
+    container_name: pacemaker-mysql
+
+    restart: always
+
+    environment:
+
+      MYSQL_ROOT_PASSWORD: root123
+
+      MYSQL_DATABASE: pacemaker
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    networks:
+      - pacemaker-network
+
+  # REDIS CACHE
+
+  redis:
+
+    image: redis:latest
+
+    container_name: pacemaker-redis
+
+    restart: always
+
+    ports:
+      - "6379:6379"
+
+    networks:
+      - pacemaker-network
+
+  # SPRING BOOT BACKEND
+
+  backend:
+
+    build: .
+
+    container_name: pacemaker-backend
+
+    restart: always
+
+    depends_on:
+      - mysql
+      - redis
+
+    ports:
+      - "8080:8080"
+
+    environment:
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pacemaker?createDatabaseIfNotExist=true
+
+      SPRING_DATASOURCE_USERNAME: root
+
+      SPRING_DATASOURCE_PASSWORD: root123
+
+    networks:
+      - pacemaker-network
+
+  # FRONTEND
+
+  frontend:
+
+    image: nginx:latest
+
+    container_name: pacemaker-frontend
+
+    restart: always
+
+    ports:
+      - "3000:80"
+
+    networks:
+      - pacemaker-network
+
+  # AI SERVICE
+
+  ai-service:
+
+    image: python:3.11
+
+    container_name: pacemaker-ai
+
+    restart: always
+
+    command: tail -f /dev/null
+
+    ports:
+      - "5000:5000"
+
+    networks:
+      - pacemaker-network
+
+  # MUX WEBHOOK RECEIVER
+
+  mux-webhook:
+
+    image: nginx:latest
+
+    container_name: pacemaker-mux-webhook
+
+    restart: always
+
+    ports:
+      - "9000:80"
+
+    networks:
+      - pacemaker-network
+
+# NETWORK
+
+networks:
+
+  pacemaker-network:
+
+# VOLUMES
+
+volumes:
+
+  mysql_data:

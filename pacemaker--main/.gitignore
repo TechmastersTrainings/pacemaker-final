@@ -1,0 +1,55 @@
+# Large files
+Pacemaker 2.zip
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Duplicate/temporary folders
+pacemaker/
+New folder/
+*.log
+Backend/run_output.txt
+Backend/debug_out.txt
+Backend/pacemaker_backup/
+Backend/invoices_pdf/
+Backend/uploads/
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Node dependencies and build files
+node_modules/
+.next/
+dist/
+out/
+Frontend/node_modules/
+Frontend/.next/
+Frontend/out/
+Frontend/tsconfig.tsbuildinfo
+
+# Maven build outputs
+Backend/target/
+Backend/.metadata/
+Backend/.apt_generated/
+Backend/.apt_generated_tests/
+
+# Python Virtual Environments
+venv/
+.venv/
+ai-service-temp/venv/
+ai-service-temp/__pycache__/
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*

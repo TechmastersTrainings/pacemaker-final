@@ -1,0 +1,60 @@
+# .dockerignore — exclude unnecessary files from Docker build context
+# This speeds up build time and reduces image size
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test artifacts
+tests/load_results/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ChromaDB data (persisted in named volumes, not baked into image)
+chroma_data/
+
+# Logs
+*.log
+logs/
+
+# Git
+.git/
+.gitignore
+
+# Documentation source (not needed in container)
+docs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (secrets — never bake into image)
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.temp
+
+# Node (if any frontend assets)
+node_modules/
+
+# Test files (not needed in production image)
+tests/

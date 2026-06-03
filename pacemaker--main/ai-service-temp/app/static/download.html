@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🧠 Groq Medical AI – PDF Downloads</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e40af 0%, #4f46e5 100%);
+      padding: 32px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 30px rgba(79,70,229,0.4);
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; }
+    header p  { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+    .badge {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+    .card-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #334155;
+    }
+    .card-header .icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .card-header h2 { font-size: 1.05rem; font-weight: 600; }
+    .card-header p  { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+    .method-badge {
+      margin-left: auto;
+      background: #1d4ed8;
+      color: #93c5fd;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .card-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Form fields ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.78rem; font-weight: 500; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select, textarea {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.2);
+    }
+    textarea { resize: vertical; min-height: 70px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── Download Button ── */
+    .btn-download {
+      margin-top: 6px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-download:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .btn-download:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Status ── */
+    .status {
+      display: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      align-items: center;
+      gap: 8px;
+    }
+    .status.loading { display: flex; background: #1e3a5f; border: 1px solid #1d4ed8; color: #93c5fd; }
+    .status.success { display: flex; background: #14532d; border: 1px solid #16a34a; color: #86efac; }
+    .status.error   { display: flex; background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(147,197,253,0.3);
+      border-top-color: #93c5fd;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer link ── */
+    .docs-link {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+    .docs-link a { color: #818cf8; text-decoration: none; }
+    .docs-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:2rem">🧠</span>
+  <div>
+    <h1>Groq Medical AI Service</h1>
+    <p>Download AI responses as beautifully formatted PDFs</p>
+  </div>
+  <span class="badge">v1.0.0</span>
+</header>
+
+<main>
+
+  <!-- ── Card 1: Explain ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#1e3a5f">📚</div>
+      <div>
+        <h2>Medical Topic Explanation</h2>
+        <p>Get a structured clinical explanation for any medical topic</p>
+      </div>
+      <span class="method-badge">POST /tutor/explain</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Topic</label>
+          <input id="exp-topic" type="text" placeholder="e.g. Appendicitis, Diabetes, STEMI" value="Appendicitis" />
+        </div>
+        <div class="field">
+          <label>Level</label>
+          <select id="exp-level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+      <div id="exp-status" class="status"></div>
+      <button class="btn-download" onclick="downloadPDF('explain')">
+        ⬇️ Download PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card 2: Ask (RAG) ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#1a2e44">💡</div>
+      <div>
+        <h2>RAG-Powered Q&A</h2>
+        <p>Ask any medical question — answered using knowledge base context</p>
+      </div>
+      <span class="method-badge">POST /tutor/ask</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Question</label>
+          <input id="ask-question" type="text" placeholder="e.g. What are symptoms of a heart attack?" value="What are the symptoms of appendicitis?" />
+        </div>
+        <div class="field">
+          <label>Level</label>
+          <select id="ask-level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+      <div id="ask-status" class="status"></div>
+      <button class="btn-download" onclick="downloadPDF('ask')">
+        ⬇️ Download PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card 3: MCQ ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#2d1b4e">📝</div>
+      <div>
+        <h2>MCQ Examination Paper</h2>
+        <p>Generate multiple-choice questions for any topic</p>
+      </div>
+      <span class="method-badge">POST /generate-mcq</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Topic</label>
+          <input id="mcq-topic" type="text" placeholder="e.g. Type 2 Diabetes, Heart Failure" value="Type 2 Diabetes" />
+        </div>
+        <div class="field">
+          <label>Difficulty</label>
+          <select id="mcq-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+            <option value="exam-level">Exam Level</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Number of Questions (1–10)</label>
+        <input id="mcq-num" type="number" min="1" max="10" value="5" />
+      </div>
+      <div id="mcq-status" class="status"></div>
+      <button class="btn-download" onclick="downloadPDF('mcq')">
+        ⬇️ Download PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card 4: Patient Simulation ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#14372b">🏥</div>
+      <div>
+        <h2>Patient Encounter Report</h2>
+        <p>Simulate a patient interaction and download the encounter report</p>
+      </div>
+      <span class="method-badge">POST /simulate-patient</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Session ID</label>
+          <input id="pat-session" type="text" value="download-session-001" />
+        </div>
+        <div class="field">
+          <label>Case Type</label>
+          <select id="pat-case">
+            <option value="chest_pain">Chest Pain (52yo male – STEMI)</option>
+            <option value="abdominal_pain">Abdominal Pain (28yo female)</option>
+            <option value="shortness_of_breath">Shortness of Breath (68yo male)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Your Message to the Patient</label>
+        <textarea id="pat-msg">Hello, I am Dr. Smith. What brings you in today?</textarea>
+      </div>
+      <div id="pat-status" class="status"></div>
+      <button class="btn-download" onclick="downloadPDF('patient')">
+        ⬇️ Download PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card 5: Rank Prediction ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#312e38">🏆</div>
+      <div>
+        <h2>Rank Prediction Report</h2>
+        <p>Rule-based + AI inference to predict your exam rank</p>
+      </div>
+      <span class="method-badge">POST /predict-rank</span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Student ID</label>
+          <input id="rank-id" type="text" value="student-001" />
+        </div>
+        <div class="field">
+          <label>Target College</label>
+          <input id="rank-college" type="text" value="AIIMS Delhi" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Mock Exam Rank</label>
+          <input id="rank-mock" type="number" placeholder="e.g. 1500" value="1500" />
+        </div>
+        <div class="field">
+          <label>Total Students in Exam</label>
+          <input id="rank-total" type="number" value="50000" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Study Hours / Day</label>
+          <input id="rank-hours" type="number" step="0.5" value="8" />
+        </div>
+        <div class="field">
+          <label>Months Remaining</label>
+          <input id="rank-months" type="number" step="0.5" value="3" />
+        </div>
+      </div>
+      <label style="font-size:0.78rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em">
+        Subject Scores (0–100)
+      </label>
+      <div class="row">
+        <div class="field"><label>Anatomy</label><input id="s-anatomy" type="number" min="0" max="100" value="78" /></div>
+        <div class="field"><label>Physiology</label><input id="s-physiology" type="number" min="0" max="100" value="85" /></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Biochemistry</label><input id="s-biochemistry" type="number" min="0" max="100" value="62" /></div>
+        <div class="field"><label>Pathology</label><input id="s-pathology" type="number" min="0" max="100" value="90" /></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Pharmacology</label><input id="s-pharmacology" type="number" min="0" max="100" value="71" /></div>
+        <div class="field"><label>Microbiology</label><input id="s-microbiology" type="number" min="0" max="100" value="68" /></div>
+      </div>
+      <div id="rank-status" class="status"></div>
+      <button class="btn-download" onclick="downloadPDF('rank')" style="background:linear-gradient(135deg,#5b21b6,#7c3aed)">
+        ⬇️ Download Rank Report PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="docs-link">
+    View API documentation at <a href="/docs" target="_blank">http://localhost:8000/docs</a>
+  </div>
+
+</main>
+
+<script>
+  async function downloadPDF(type) {
+    const idMap = { explain: 'exp', ask: 'ask', mcq: 'mcq', patient: 'pat', rank: 'rank' };
+    const idPrefix = idMap[type] || type;
+    const statusEl = document.getElementById(`${idPrefix}-status`);
+    const btn = statusEl.previousElementSibling;
+
+    // Show loading
+    statusEl.className = 'status loading';
+    statusEl.innerHTML = '<div class="spinner"></div> Generating AI response and building PDF... please wait';
+    btn.disabled = true;
+
+    let url, body, filename;
+
+    if (type === 'explain') {
+      url = '/tutor/explain?download=pdf';
+      body = {
+        topic: document.getElementById('exp-topic').value || 'Appendicitis',
+        level: document.getElementById('exp-level').value,
+        context: ''
+      };
+      filename = `explain_${body.topic.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+    } else if (type === 'ask') {
+      url = '/tutor/ask?download=pdf';
+      body = {
+        question: document.getElementById('ask-question').value || 'What is appendicitis?',
+        level: document.getElementById('ask-level').value,
+        top_k: 3
+      };
+      filename = `rag_answer.pdf`;
+    } else if (type === 'mcq') {
+      url = '/generate-mcq?download=pdf';
+      body = {
+        topic: document.getElementById('mcq-topic').value || 'Type 2 Diabetes',
+        num_questions: parseInt(document.getElementById('mcq-num').value) || 5,
+        difficulty: document.getElementById('mcq-difficulty').value
+      };
+      filename = `mcq_${body.topic.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+    } else if (type === 'patient') {
+      url = '/simulate-patient?download=pdf';
+      body = {
+        session_id: document.getElementById('pat-session').value || 'session-001',
+        user_message: document.getElementById('pat-msg').value,
+        case_type: document.getElementById('pat-case').value,
+        reset_session: true
+      };
+      filename = `patient_${body.session_id}.pdf`;
+    } else if (type === 'rank') {
+      url = '/predict-rank?download=pdf';
+      body = {
+        student_id:          document.getElementById('rank-id').value || 'student-001',
+        target_college:      document.getElementById('rank-college').value || 'AIIMS Delhi',
+        mock_rank:           parseInt(document.getElementById('rank-mock').value) || null,
+        total_students:      parseInt(document.getElementById('rank-total').value) || 50000,
+        study_hours_per_day: parseFloat(document.getElementById('rank-hours').value) || 8,
+        months_remaining:    parseFloat(document.getElementById('rank-months').value) || 3,
+        scores: {
+          anatomy:      parseFloat(document.getElementById('s-anatomy').value) || 0,
+          physiology:   parseFloat(document.getElementById('s-physiology').value) || 0,
+          biochemistry: parseFloat(document.getElementById('s-biochemistry').value) || 0,
+          pathology:    parseFloat(document.getElementById('s-pathology').value) || 0,
+          pharmacology: parseFloat(document.getElementById('s-pharmacology').value) || 0,
+          microbiology: parseFloat(document.getElementById('s-microbiology').value) || 0,
+        }
+      };
+      filename = `rank_prediction_${body.student_id}.pdf`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || `HTTP ${response.status}`);
+      }
+
+      // Get PDF blob and trigger browser download
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+
+      statusEl.className = 'status success';
+      statusEl.innerHTML = `✅ PDF downloaded successfully → <strong>${filename}</strong>`;
+    } catch (err) {
+      statusEl.className = 'status error';
+      statusEl.innerHTML = `❌ Error: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

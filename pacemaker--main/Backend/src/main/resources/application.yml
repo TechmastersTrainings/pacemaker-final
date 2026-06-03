@@ -1,0 +1,95 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/pacemaker?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  jpa:
+
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: YOUR_EMAIL@gmail.com
+    password: APP_PASSWORD
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+springdoc:
+
+  api-docs:
+    enabled: true
+
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+jwt:
+  secret: mysecretkeymysecretkeymysecretkey123456
+  expiration: 86400000
+
+mux:
+  token:
+    id: test-token-id
+    secret: test-token-secret
+
+discourse:
+  base-url: https://community.example.com
+  sso-secret: discourse-secret-key
+
+razorpay:
+  key:
+    id: YOUR_KEY
+    secret: YOUR_SECRET
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        stat: DEBUG

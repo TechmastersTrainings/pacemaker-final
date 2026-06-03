@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: groq-ai-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - APP_ENV=development
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      # Hot-reload: mount source code directly (dev only)
+      - ./app:/app/app
+      # Persist ChromaDB data between restarts
+      - chroma_data:/app/chroma_data
+    restart: unless-stopped
+    networks:
+      - ai-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: groq-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ai-network
+
+volumes:
+  redis_data:
+  chroma_data:
+
+networks:
+  ai-network:
+    driver: bridge
