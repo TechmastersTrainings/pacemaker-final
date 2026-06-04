@@ -19,6 +19,7 @@ export default function StudentDashboardLayout({ children }: { children: React.R
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+    { icon: LayoutDashboard, label: 'Video Library', href: '/dashboard/videos' },
     { icon: Video, label: 'Live Ecosystem', href: '/dashboard/live' },
     { icon: MonitorPlay, label: 'Live Recordings', href: '/dashboard/live#recordings' },
     { icon: Trophy, label: 'Leaderboard', href: '/dashboard/leaderboard' },

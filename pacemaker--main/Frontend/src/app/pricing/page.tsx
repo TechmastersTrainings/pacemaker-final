@@ -160,6 +160,12 @@ export default function PricingPage() {
       }
     };
     fetchPlans();
+
+    // Load Razorpay Script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
   }, []);
 
   // 10-Minute Countdown Clock Logic
@@ -278,107 +284,174 @@ export default function PricingPage() {
   const executeSubscriptionActivation = async () => {
     if (!checkoutPlan || !checkoutDuration) return;
 
-    setCheckoutStep('processing');
-
     const pricing = getPricingData();
+    const RAZORPAY_KEY = 'rzp_test_SxUph0F8yRLllK';
 
+    // 1. Create order on backend OR use local logic for demo if no backend yet
+    // For this implementation, we'll try the backend and fallback to simulated success
+    let backendSubscriptionId = 'sub_offline_' + Date.now();
+    
     let mappedPlan: PlanType = 'Medium';
     if (checkoutPlan.id === 'plan-c') mappedPlan = 'Enterprise';
     else if (checkoutPlan.id === 'plan-b') mappedPlan = 'High';
     else mappedPlan = 'Basic';
 
     try {
-      // Call createSubscription backend endpoint
-      await subscriptionService.createSubscription({
+      const response = await subscriptionService.createSubscription({
         plan: mappedPlan,
         amount: pricing.final
       });
+      if (response && response.subscriptionId) {
+        backendSubscriptionId = response.subscriptionId;
+      }
     } catch (err) {
-      console.error('Error creating subscription on backend:', err);
+      console.warn('Backend subscription creation failed, using fallback ID');
     }
 
-    setTimeout(() => {
-      const subs = getSubscribers();
-      const foundIdx = subs.findIndex(s => s.email.toLowerCase() === userEmail.toLowerCase());
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: pricing.final * 100, // in paise
+      currency: "INR",
+      name: "PaceMaker LMS",
+      description: `Enrollment: ${checkoutPlan.name} (${checkoutDuration.label})`,
+      image: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=100&auto=format&fit=crop",
+      subscription_id: backendSubscriptionId.startsWith('sub_razorpay') ? backendSubscriptionId : undefined,
+      handler: async function (response: any) {
+        setCheckoutStep('processing');
+        
+        try {
+          // Verify with backend
+          await subscriptionService.verifyPayment({
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySubscriptionId: response.razorpay_subscription_id || backendSubscriptionId,
+            razorpaySignature: response.razorpay_signature
+          });
+        } catch (e) {
+          console.error("Backend verification failed", e);
+        }
 
-      const durationMonths = parseInt(checkoutDuration.label.split(' ')[0]) || 12;
-      const extensionMonths = checkoutDuration.subText ? 1 : 0;
-      const totalMonths = durationMonths + extensionMonths;
-
-      const startDateStr = new Date().toISOString().split('T')[0];
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + totalMonths);
-      const endDateStr = endDate.toISOString().split('T')[0];
-
-      // Save custom details to localStorage
-      localStorage.setItem('student_mobile', mobileNumber);
-      localStorage.setItem('student_state', selectedState);
-      localStorage.setItem('student_college', selectedCollege);
-      localStorage.setItem('student_year', selectedYear);
-
-      const subscriberData: Subscriber = {
-        userId: foundIdx !== -1 ? subs[foundIdx].userId : 'u_student_' + Math.random().toString(36).substr(2, 5),
+        // Finalize locally
+        finalizeLocalSubscription(pricing.final, mappedPlan, response.razorpay_payment_id);
+      },
+      prefill: {
         name: userName,
         email: userEmail,
-        plan: mappedPlan,
-        status: 'Active',
-        startDate: startDateStr,
-        endDate: endDateStr,
-        autoRenew: true,
-        amount: pricing.final,
-        paymentMethod: paymentOption === 'card' ? 'Card' : 'UPI',
-        last4: paymentOption === 'card' ? (cardNo.slice(-4) || '4242') : undefined,
-        registeredDate: startDateStr,
-      };
-
-      if (foundIdx !== -1) {
-        subs[foundIdx] = subscriberData;
-      } else {
-        subs.unshift(subscriberData);
+        contact: mobileNumber
+      },
+      notes: {
+        plan: checkoutPlan.name,
+        duration: checkoutDuration.label,
+        college: selectedCollege
+      },
+      theme: {
+        color: "#063e46"
+      },
+      modal: {
+        ondismiss: function() {
+          console.log("Payment modal closed");
+        }
+      },
+      // Restriction for international cards
+      config: {
+        display: {
+          blocks: {
+            banks: {
+              name: 'Most Used Methods',
+              instruments: [
+                { method: 'upi' },
+                { method: 'card' },
+                { method: 'netbanking' }
+              ]
+            }
+          },
+          sequence: ['block.banks'],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      },
+      payment_method: {
+        card: {
+          international: false // This disables international card payments in some Razorpay versions
+        }
       }
-      saveSubscribers(subs);
+    };
 
-      // Save payments log
-      const pays = getPayments();
-      const newPay: PaymentHistory = {
-        id: 'pay_' + Math.random().toString(36).substr(2, 5),
-        userId: subscriberData.userId,
-        date: startDateStr,
-        description: `${checkoutPlan.name} (${checkoutDuration.label}) Verified Onboarding`,
-        amount: pricing.final,
-        status: 'paid',
-        invoiceUrl: '#',
-        paymentMethod: paymentOption === 'card' ? 'Card' : 'UPI',
-        last4: paymentOption === 'card' ? (cardNo.slice(-4) || '4242') : undefined
-      };
-      savePayments([newPay, ...pays]);
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  };
 
-      // Set success state
-      setCheckoutStep('success');
+  const finalizeLocalSubscription = (amount: number, mappedPlan: PlanType, paymentId: string) => {
+    const subs = getSubscribers();
+    const userEmail = localStorage.getItem('currentUserEmail') || 'student@pacemaker.com';
+    const foundIdx = subs.findIndex(s => s.email.toLowerCase() === userEmail.toLowerCase());
 
-      // Trigger standard audio notification beep if available
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = 659.25; // E5
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.15);
-        setTimeout(() => {
-          const osc2 = audioCtx.createOscillator();
-          osc2.connect(gain);
-          osc2.frequency.value = 987.77; // B5
-          osc2.start();
-          osc2.stop(audioCtx.currentTime + 0.35);
-        }, 150);
-      } catch (e) {
-        console.log("Audio feedback blocked or unavailable");
-      }
+    const durationLabel = checkoutDuration?.label || '12 Months';
+    const durationMonths = parseInt(durationLabel.split(' ')[0]) || 12;
+    const extensionMonths = checkoutDuration?.subText ? 1 : 0;
+    const totalMonths = durationMonths + extensionMonths;
 
-    }, 2800); // Interactive transaction ledger calculation delay
+    const startDateStr = new Date().toISOString().split('T')[0];
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + totalMonths);
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    // Save custom details to localStorage
+    localStorage.setItem('student_mobile', mobileNumber);
+    localStorage.setItem('student_state', selectedState);
+    localStorage.setItem('student_college', selectedCollege);
+    localStorage.setItem('student_year', selectedYear);
+
+    const subscriberData: Subscriber = {
+      userId: foundIdx !== -1 ? subs[foundIdx].userId : 'u_student_' + Math.random().toString(36).substr(2, 5),
+      name: userName,
+      email: userEmail,
+      plan: mappedPlan,
+      status: 'Active',
+      startDate: startDateStr,
+      endDate: endDateStr,
+      autoRenew: true,
+      amount: amount,
+      paymentMethod: 'Razorpay',
+      last4: paymentId.slice(-4),
+      registeredDate: startDateStr,
+    };
+
+    if (foundIdx !== -1) {
+      subs[foundIdx] = subscriberData;
+    } else {
+      subs.unshift(subscriberData);
+    }
+    saveSubscribers(subs);
+
+    // Save payments log
+    const pays = getPayments();
+    const newPay: PaymentHistory = {
+      id: paymentId || ('pay_' + Math.random().toString(36).substr(2, 5)),
+      userId: subscriberData.userId,
+      date: startDateStr,
+      description: `${checkoutPlan?.name} (${checkoutDuration?.label}) Premium Onboarding`,
+      amount: amount,
+      status: 'paid',
+      invoiceUrl: '#',
+      paymentMethod: 'Razorpay'
+    };
+    savePayments([newPay, ...pays]);
+
+    setCheckoutStep('success');
+
+    // Trigger standard audio notification beep
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 659.25;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {}
   };
 
   // Get details checklist matching the selected Plan
@@ -1335,11 +1408,11 @@ export default function PricingPage() {
                       <button 
                         onClick={() => {
                           closeCheckout();
-                          router.push('/dashboard');
+                          router.push('/dashboard/videos');
                         }}
                         className="w-full bg-[#063e46] hover:bg-[#0a4d57] text-white py-4 rounded-2xl font-black text-base transition-all cursor-pointer shadow-lg active:scale-95"
                       >
-                        Enter Preparation Dashboard
+                        Explore Video Library
                       </button>
                     </div>
                   </div>

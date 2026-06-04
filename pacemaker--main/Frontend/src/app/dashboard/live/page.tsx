@@ -6,11 +6,12 @@ import {
   Bell, Users, ShieldCheck, Zap, ArrowRight, Monitor,
   Layout, Globe, Star, Activity, Play, GraduationCap,
   BookOpen, CalendarDays, CheckCircle2, AlertCircle,
-  Pause, Loader2, Maximize, X, Volume2, MonitorPlay, ChevronLeft, ChevronDown
+  Pause, Loader2, Maximize, X, Volume2, MonitorPlay, ChevronLeft, ChevronDown, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { getVideoFromDB } from '@/lib/db';
+import { getSubscribers } from '@/lib/subscriptionStore';
 
 type LiveSession = {
   id: string;
@@ -141,9 +142,26 @@ function StudentLivePage() {
   const [durationStr, setDurationStr] = useState('00:00');
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useEffect(() => {
+    const email = localStorage.getItem('currentUserEmail');
+    if (email) {
+      const subs = getSubscribers();
+      const mySub = subs.find(s => s.email.toLowerCase() === email.toLowerCase());
+      setIsSubscribed(mySub?.status === 'Active');
+    } else {
+      setIsSubscribed(false);
+    }
+  }, []);
+
   const handlePlayRecording = async (rec: any) => {
+    if (!isSubscribed) {
+      setShowPaywall(true);
+      return;
+    }
     setActiveRecording(rec);
     setVideoLoading(true);
     setVideoError(false);
@@ -638,6 +656,55 @@ function StudentLivePage() {
             )}
           </div>
         </section>
+
+        {/* Global Paywall Modal */}
+        <AnimatePresence>
+           {showPaywall && (
+             <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  onClick={() => setShowPaywall(false)}
+                  className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
+                />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-white w-full max-w-lg rounded-[3rem] p-10 relative z-10 shadow-2xl overflow-hidden"
+                >
+                   <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-teal-600/10 rounded-full blur-3xl"></div>
+                   
+                   <div className="flex flex-col items-center text-center gap-6">
+                      <div className="w-20 h-20 bg-teal-50 rounded-[2rem] flex items-center justify-center border border-teal-100">
+                         <Lock className="w-10 h-10 text-teal-600" />
+                      </div>
+                      
+                      <div>
+                         <h2 className="text-3xl font-black text-gray-900 tracking-tight mb-3">Premium Unlock Required</h2>
+                         <p className="text-gray-500 font-medium leading-relaxed">
+                            To watch live recordings and premium medical modules, you need an active PaceMaker subscription.
+                         </p>
+                      </div>
+
+                      <div className="w-full flex flex-col gap-3">
+                         <Link 
+                           href="/pricing"
+                           className="w-full py-5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-teal-600/30 flex items-center justify-center gap-3"
+                         >
+                            View Subscription Plans <ChevronRight className="w-5 h-5" />
+                         </Link>
+                         <button 
+                           onClick={() => setShowPaywall(false)}
+                           className="w-full py-4 text-gray-400 hover:text-gray-900 font-bold transition-colors"
+                         >
+                            Maybe Later
+                         </button>
+                      </div>
+                   </div>
+                </motion.div>
+             </div>
+           )}
+        </AnimatePresence>
 
         {/* Premium Custom Player Modal */}
         <AnimatePresence>

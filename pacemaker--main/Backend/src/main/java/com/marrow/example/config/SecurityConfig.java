@@ -47,9 +47,12 @@ public class SecurityConfig {
         config.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",   // Next.js Frontend
             "http://localhost:8081",   // Expo Web
-            "http://10.0.2.2:8080",   // Android Emulator reverse proxy
+            "http://10.0.2.2:8080",    // Android Emulator reverse proxy
             "http://127.0.0.1:3000",
-            "http://127.0.0.1:8081"
+            "http://127.0.0.1:8081",
+            "https://pacemaker-final.vercel.app",
+            "https://pacemaker-finel1.vercel.app",
+            "https://*.vercel.app"
         ));
 
         config.setAllowedMethods(Arrays.asList(
@@ -94,14 +97,14 @@ public class SecurityConfig {
                 ).permitAll()
                 // Public — Payment & Webhooks (called by Razorpay servers)
                 .requestMatchers(
-                    "/api/payments/**",
-                    "/api/webhooks/**",
-                    "/api/subscription-plans/**",
-                    "/api/subscriptions/verify",
-                    "/api/notifications/welcome",
-                    "/api/notifications/payment-confirmation",
-                    "/api/sso/discourse/login",
-                    "/api/sso/discourse/validate"
+                    "/api/v1/payments/**",
+                    "/api/v1/webhooks/**",
+                    "/api/v1/subscription-plans/**",
+                    "/api/v1/subscriptions/verify",
+                    "/api/v1/notifications/welcome",
+                    "/api/v1/notifications/payment-confirmation",
+                    "/api/v1/sso/discourse/login",
+                    "/api/v1/sso/discourse/validate"
                 ).permitAll()
                 // Everything else requires a valid JWT
                 .anyRequest().authenticated()

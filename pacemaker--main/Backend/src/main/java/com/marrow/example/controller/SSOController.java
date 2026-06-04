@@ -11,7 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/sso")
+@RequestMapping("/api/v1/sso")
 @RequiredArgsConstructor
 @Tag(name = "SSO Integration API", description = "Endpoints for Discourse single sign-on authentication and session management")
 public class SSOController {

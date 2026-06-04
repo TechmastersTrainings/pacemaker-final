@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getVideoFromDB, deleteVideoFromDB } from '@/lib/db';
 import { commentService } from '@/services/commentService';
 import type { Comment, Reply as ReplyType } from '@/lib/commentStore';
+import { getSubscribers } from '@/lib/subscriptionStore';
 
 import { VideoPlayerSkeleton } from '@/components/Skeletons';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -104,6 +105,23 @@ function VideoDetailPage() {
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     const name = localStorage.getItem('currentUser');
+    const email = localStorage.getItem('currentUserEmail');
+    
+    // Check subscription for students
+    if (role === 'student' || !role) {
+      if (email) {
+        const subs = getSubscribers();
+        const mySub = subs.find(s => s.email.toLowerCase() === email.toLowerCase());
+        if (!mySub || mySub.status !== 'Active') {
+          router.push('/dashboard/videos');
+          return;
+        }
+      } else {
+        router.push('/dashboard/videos');
+        return;
+      }
+    }
+
     setUserRole(role);
     setCurrentUserName(name || 'Student');
     

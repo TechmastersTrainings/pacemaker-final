@@ -2,8 +2,12 @@ import apiClient from '@/lib/apiClient';
 import axios from 'axios';
 
 // Separate client for endpoints not under /api/v1
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_HOST = process.env.NEXT_PUBLIC_API_URL || 
+  (isLocalhost ? 'http://localhost:8080' : 'YOUR_RENDER_BACKEND_URL');
 const baseClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: API_HOST.replace(/\/$/, ''),
   timeout: 8000,
   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
   withCredentials: true,
