@@ -1,14 +1,14 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   profiles:
     active: dev
 
   datasource:
-    url: jdbc:mysql://localhost:3306/pacemaker?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   servlet:
@@ -17,12 +17,9 @@ spring:
       max-request-size: 50MB
 
   jpa:
-
     hibernate:
       ddl-auto: update
-
     show-sql: true
-
     properties:
       hibernate:
         format_sql: true
@@ -41,8 +38,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: YOUR_EMAIL@gmail.com
-    password: APP_PASSWORD
+    username: ${MAIL_USERNAME:YOUR_EMAIL@gmail.com}
+    password: ${MAIL_PASSWORD:APP_PASSWORD}
     properties:
       mail:
         smtp:
@@ -51,20 +48,16 @@ spring:
             enable: true
 
   cache:
-    type: redis
-    redis:
-      time-to-live: 600000
+    type: none # Changed from 'redis' to 'none' to avoid instant crashes if your Redis environment isn't live yet. Update to 'redis' when ready.
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 springdoc:
-
   api-docs:
     enabled: true
-
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
