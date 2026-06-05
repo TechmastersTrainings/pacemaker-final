@@ -3,12 +3,13 @@ server:
 
 spring:
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev} # Allows overriding profile in production (e.g., 'prod')
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    # Added safe defaults for local development; Render will override these via its Environment Variables
+    url: ${DB_URL:jdbc:mysql://localhost:3306/pacemaker?createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root123}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   servlet:
@@ -18,7 +19,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      # Use 'none' or 'validate' in production, 'update' is fine for development
+      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
     show-sql: true
     properties:
       hibernate:
@@ -48,7 +50,7 @@ spring:
             enable: true
 
   cache:
-    type: none # Changed from 'redis' to 'none' to avoid instant crashes if your Redis environment isn't live yet. Update to 'redis' when ready.
+    type: none 
 
   data:
     redis:
@@ -63,22 +65,22 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: mysecretkeymysecretkeymysecretkey123456
-  expiration: 86400000
+  secret: ${JWT_SECRET:mysecretkeymysecretkeymysecretkey123456} # Securely overridable in prod
+  expiration: ${JWT_EXPIRATION:86400000}
 
 mux:
   token:
-    id: test-token-id
-    secret: test-token-secret
+    id: ${MUX_TOKEN_ID:test-token-id}
+    secret: ${MUX_TOKEN_SECRET:test-token-secret}
 
 discourse:
-  base-url: https://community.example.com
-  sso-secret: discourse-secret-key
+  base-url: ${DISCOURSE_BASE_URL:https://community.example.com}
+  sso-secret: ${DISCOURSE_SSO_SECRET:discourse-secret-key}
 
 razorpay:
   key:
-    id: YOUR_KEY
-    secret: YOUR_SECRET
+    id: ${RAZORPAY_KEY_ID:YOUR_KEY}
+    secret: ${RAZORPAY_KEY_SECRET:YOUR_SECRET}
 
 logging:
   level:
