@@ -7,7 +7,7 @@ spring:
 
   datasource:
     # Added safe defaults for local development; Render will override these via its Environment Variables
-    url: ${DB_URL:jdbc:mysql://localhost:3306/pacemaker?createDatabaseIfNotExist=true}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/pacemakerfinel?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
